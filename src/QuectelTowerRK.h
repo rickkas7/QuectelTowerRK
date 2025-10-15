@@ -86,8 +86,10 @@ public:
         unsigned int mcc {0};       // 0-999
         unsigned int mnc {0};       // 0-999
         uint32_t cellId {0};        // 28-bits
-        unsigned int tac {0};       // 16-bits
+        unsigned int lac {0};       // 16-bits
         int signalPower {0};
+
+        String toString() const;
 
         CellularServing &toJsonWriter(JSONWriter &writer, bool wrapInObject = true);
 
@@ -95,6 +97,7 @@ public:
 
         int parse(const char *in);
 
+        bool isValid() const;
     };
 
     /**
@@ -110,11 +113,15 @@ public:
         int signalPower {0};
         int signalStrength {0};
 
+        String toString() const;
+
         CellularNeighbor &toJsonWriter(JSONWriter &writer, bool wrapInObject = true);
 
         void clear();
 
         int parse(const char *in);
+
+        bool isValid() const;
     };
 
     class TowerInfo {
@@ -130,12 +137,52 @@ public:
         int parseServing(const char *in);
         int parseNeighbor(const char *in);
 
+    
+        void log(const char *msg, LogLevel level = LOG_LEVEL_TRACE);
+
+        /**
+         * @brief Add the serving and neighbor towers to the writer in an array
+         * 
+         * @param writer 
+         * @param numToInclude Number of towers to add, or 0 for all
+         * @return TowerInfo& 
+         */
+        TowerInfo &toJsonWriter(JSONWriter &writer, int numToInclude = 0);
+
+        bool isValid() const;
+
         CellularServing serving;
         std::vector<CellularNeighbor> neighbors;
     };
 
-    int scanBlocking(TowerInfo &towerInfo);
+    /**
+     * @brief Scan for towers, blocking.
+     * 
+     * @param towerInfo Filled in with serving tower and neighboring tower information.
+     * @param timeoutMs How long to wait in milliseconds for a response (0 = wait forever). Default is 10 seconds.
+     * @return int 
+     * 
+     * This call normally takes around 1 second if already connected to cellular. It can block
+     * for longer if not connected to cellular as it will wait until connected.
+     */
+    int scanBlocking(TowerInfo &towerInfo, unsigned long timeoutMs = 10000);
 
+    /**
+     * @brief Asynchronous scan for cellular towers with callback function
+     * 
+     * @param scanCallback Callback function to call when complete
+     * @retval SYSTEM_ERROR_NONE Success
+     * @retval SYSTEM_ERROR_BUSY Cannot start a new scan
+     * 
+     * The callback function is only called if the return value is SYSTEM_ERROR_NONE. It is called from
+     * a separate worker thread.
+     * 
+     * Callback function prototype for a C++ function or lambda:
+     * 
+     * void callback(TowerInfo towerInfo)
+     * 
+     * This call normally takes around 1 second if already connected to cellular.
+     */
     int scanWithCallback(std::function<void(TowerInfo towerInfo)> scanCallback);
 
     /**
@@ -144,6 +191,7 @@ public:
      * @retval SYSTEM_ERROR_NONE Success
      * @retval SYSTEM_ERROR_BUSY Cannot start a new scan
      * 
+     * This is a low-level function; you'd typically use scanBlocking() or scanWithCallback().
      */
     int startScan();
 
@@ -165,20 +213,13 @@ public:
     unsigned int getSignalUpdate();
 
     /**
-     * @brief Get the serving tower information
-     *
-     * @param[out] serving The serving tower information
-     * @retval SYSTEM_ERROR_NONE Success
+     * @brief Get the most recently retrieved tower information
+     * 
+     * @param towerInfo 
+     * 
+     * This returns the last saved value and does not scan again. See scanBlocking and scanWithCallback.
      */
-    int getServingTower(CellularServing& serving);
-
-    /**
-     * @brief Get the neighbor towers information
-     *
-     * @param[out] neigbors The neighbor towers information
-     * @retval SYSTEM_ERROR_NONE Success
-     */
-    int getNeighborTowers(Vector<CellularNeighbor>& neigbors);
+    void getTowerInfo(TowerInfo &towerInfo);
 
     /**
      * @brief Lock object

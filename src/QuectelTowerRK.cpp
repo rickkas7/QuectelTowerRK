@@ -20,6 +20,7 @@
     #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
+static Logger _log("app.tower");
 
 QuectelTowerRK *QuectelTowerRK::_instance = nullptr;
 
@@ -29,27 +30,32 @@ QuectelTowerRK::QuectelTowerRK() : _signal_update(0), _thread(nullptr)
     _thread = new Thread("tracker_cellular", [this]() {QuectelTowerRK::thread_f();}, OS_THREAD_PRIORITY_DEFAULT);
 }
 
-int QuectelTowerRK::scanBlocking(TowerInfo &towerInfo) {
-    Mutex blockingMutex;
-    blockingMutex.lock();
+int QuectelTowerRK::scanBlocking(TowerInfo &towerInfo, unsigned long timeoutMs) {
+    bool done = false;
 
-    int ret = scanWithCallback([&blockingMutex, &towerInfo](TowerInfo tempTowerInfo) {
-        blockingMutex.unlock();
+    unsigned long startMs = millis();
+
+    int ret = scanWithCallback([&done, &towerInfo](TowerInfo tempTowerInfo) {
+        done = true;
         towerInfo = tempTowerInfo;
     });
 
     if (ret == SYSTEM_ERROR_NONE) {
-        blockingMutex.lock();
+        while(!done) {
+            if ((timeoutMs != 0) && (millis() - startMs >= timeoutMs)) {
+                ret = SYSTEM_ERROR_TIMEOUT;
+                break;
+            }
+            delay(1);
+        }
     }
     return ret;
 }
 
 int QuectelTowerRK::scanWithCallback(std::function<void(TowerInfo towerInfo)> scanCallback) {
-    this->scanCallback = scanCallback;
     int ret = startScan();
-
-    if (ret != SYSTEM_ERROR_NONE) {
-        this->scanCallback = nullptr;
+    if (ret == SYSTEM_ERROR_NONE) {
+        this->scanCallback = scanCallback;
     }
     return ret;
 }
@@ -181,6 +187,13 @@ unsigned int QuectelTowerRK::getSignalUpdate()
     return _signal_update;
 }
 
+void QuectelTowerRK::getTowerInfo(TowerInfo &towerInfo) {
+    WITH_LOCK(mutex) {
+        towerInfo = savedTowerInfo;
+    }
+}
+
+
 // [static] 
 QuectelTowerRK::RadioAccessTechnology QuectelTowerRK::parseRadioAccessTechnology(const char *str) {
     RadioAccessTechnology rat = RadioAccessTechnology::NONE;
@@ -209,7 +222,7 @@ int QuectelTowerRK::CellularServing::parse(const char *in) {
             "%u,%u,%lX,"
             "%*15[^,],%*15[^,],%*15[^,],%*15[^,],%*15[^,],%X,%d",
             stateStr, ratStr,
-            &mcc, &mnc, &cellId, &tac, &signalPower);
+            &mcc, &mnc, &cellId, &lac, &signalPower);
 
     if (nitems < 7) {
         return SYSTEM_ERROR_NOT_ENOUGH_DATA;
@@ -223,6 +236,12 @@ int QuectelTowerRK::CellularServing::parse(const char *in) {
     return SYSTEM_ERROR_NONE;
 }
 
+String QuectelTowerRK::CellularServing::toString() const {
+    return String::format("rat=%d, mcc=%d, mnc=%d, lac=%d, cid=%d, str=%d", 
+        (int)rat, (int)mcc, (int)mnc, (int)lac, (int)cellId, (int)signalPower);
+}
+
+
 QuectelTowerRK::CellularServing &QuectelTowerRK::CellularServing::toJsonWriter(JSONWriter &writer, bool wrapInObject) {
 
     if (wrapInObject) {
@@ -232,7 +251,7 @@ QuectelTowerRK::CellularServing &QuectelTowerRK::CellularServing::toJsonWriter(J
     writer.name("rat").value("lte");
     writer.name("mcc").value((unsigned)mcc);
     writer.name("mnc").value((unsigned)mnc);
-    writer.name("lac").value((unsigned)tac);
+    writer.name("lac").value((unsigned)lac);
     writer.name("cid").value((unsigned)cellId);
     writer.name("str").value(signalPower);
 
@@ -248,8 +267,11 @@ void QuectelTowerRK::CellularServing::clear() {
     mcc = 0;
     mnc = 0;
     cellId = 0;
-    tac = 0;
+    lac = 0;
     signalPower = 0;
+}
+bool QuectelTowerRK::CellularServing::isValid() const {
+    return rat != RadioAccessTechnology::NONE;
 }
 
 
@@ -272,6 +294,10 @@ int QuectelTowerRK::CellularNeighbor::parse(const char *in) {
     }
 
     return SYSTEM_ERROR_NONE;
+}
+
+String QuectelTowerRK::CellularNeighbor::toString() const {
+    return String::format("nid=%d, ch=%d, str=%d", (int)neighborId, (int)earfcn, (int)signalPower);    
 }
 
 
@@ -300,6 +326,11 @@ void QuectelTowerRK::CellularNeighbor::clear() {
     signalPower = 0;
     signalStrength = 0;
 }
+
+bool QuectelTowerRK::CellularNeighbor::isValid() const {
+    return rat != RadioAccessTechnology::NONE;
+}
+
 
 QuectelTowerRK::TowerInfo::TowerInfo() {
 
@@ -336,8 +367,43 @@ int QuectelTowerRK::TowerInfo::parseNeighbor(const char *in) {
     return ret;
 }
 
+void QuectelTowerRK::TowerInfo::log(const char *msg, LogLevel level) {
+    _log.log(level, "%s: serving %s", msg, serving.toString().c_str());
+    for(auto it = neighbors.begin(); it != neighbors.end(); ++it) {
+        _log.log(level, " neighbor %s", (*it).toString().c_str());
+    }
+}
+
+
+
 
 void QuectelTowerRK::TowerInfo::clear() {
     serving.clear();
     neighbors.clear();
+}
+
+QuectelTowerRK::TowerInfo &QuectelTowerRK::TowerInfo::toJsonWriter(JSONWriter &writer, int numToInclude) {
+    int numAdded = 0;
+
+    writer.beginArray();
+    if (serving.rat != RadioAccessTechnology::NONE) {
+        serving.toJsonWriter(writer);
+        numAdded++;
+    }
+    for(auto it = neighbors.begin(); it != neighbors.end(); ++it) {
+        if (numToInclude != 0 && numAdded >= numToInclude) {
+            break;
+        }
+        (*it).toJsonWriter(writer);
+        numAdded++;
+    }
+
+    writer.endArray();
+
+    return *this;
+}
+
+
+bool QuectelTowerRK::TowerInfo::isValid() const {
+    return serving.isValid();
 }
