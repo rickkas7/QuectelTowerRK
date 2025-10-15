@@ -32,7 +32,6 @@ void loop() {
             else {
                 Log.info("scan error %d", res);
             }
-
         }
     }
 }

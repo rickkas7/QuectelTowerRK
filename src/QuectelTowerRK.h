@@ -124,6 +124,10 @@ public:
         bool isValid() const;
     };
 
+    /**
+     * @brief Container 
+     * 
+     */
     class TowerInfo {
     public:
         TowerInfo();
@@ -137,7 +141,12 @@ public:
         int parseServing(const char *in);
         int parseNeighbor(const char *in);
 
-    
+        /**
+         * @brief Log the information to the debugging log
+         * 
+         * @param msg A message to write before the serving cell
+         * @param level Logging level. Default is LOG_LEVEL_TRACE. LOG_LEVEL_INFO is another common option.
+         */
         void log(const char *msg, LogLevel level = LOG_LEVEL_TRACE);
 
         /**
@@ -194,6 +203,14 @@ public:
      * This is a low-level function; you'd typically use scanBlocking() or scanWithCallback().
      */
     int startScan();
+
+    /**
+     * @brief This method makes sure the callback is not called 
+     * 
+     * It's used internally by scanBlocking but if you are using scanWithCallback you can also
+     * use this to cancel the pending callback. 
+     */
+    void cancelScan();
 
     /**
      * @brief Get the cellular signal strength

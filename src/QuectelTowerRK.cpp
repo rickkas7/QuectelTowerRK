@@ -43,6 +43,7 @@ int QuectelTowerRK::scanBlocking(TowerInfo &towerInfo, unsigned long timeoutMs) 
     if (ret == SYSTEM_ERROR_NONE) {
         while(!done) {
             if ((timeoutMs != 0) && (millis() - startMs >= timeoutMs)) {
+                cancelScan();
                 ret = SYSTEM_ERROR_TIMEOUT;
                 break;
             }
@@ -66,6 +67,10 @@ int QuectelTowerRK::startScan() {
     CHECK_FALSE(os_queue_put(_commandQueue, &event, 0, nullptr), SYSTEM_ERROR_BUSY);
 
     return SYSTEM_ERROR_NONE;
+}
+
+void QuectelTowerRK::cancelScan() {
+    scanCallback = nullptr;
 }
 
 
