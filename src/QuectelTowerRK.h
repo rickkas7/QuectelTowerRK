@@ -38,26 +38,26 @@
  */
 class QuectelTowerRK {
 public:
-    // delay between checking cell strength when no errors detected
+    /**
+     * @brief Delay between checking cell strength when no errors detected
+     */
     static constexpr system_tick_t PERIOD_SUCCESS_MS {1000};
 
-    // delay between checking cell strength when errors detected
-    // longer than success to minimize thrashing on the cell interface which could
-    // delay recovery in Device-OS
+    /**
+     * @brief Delay between checking cell strength when errors detected
+     * 
+     * Longer than success to minimize thrashing on the cell interface which could
+     * delay recovery in Device-OS
+     */
     static constexpr system_tick_t PERIOD_ERROR_MS {10000};
 
-    // cell updates need to be at least this often or flagged as an error
+    /**
+     * @brief Cell updates need to be at least this often or flagged as an error
+     */
     static constexpr unsigned int DEFAULT_MAX_AGE_SEC {10};
 
-    // Only have enough space for so many neighbor towers
-    static constexpr size_t  MAX_NEIGHBORS {4};
-
-    // Maximum amount of time, in milliseconds, that a tower scan should take
-    static constexpr system_tick_t SCAN_DELAY {500 + 500};
-
     /**
-     * @brief Commands to instruct cellular thread
-     *
+     * @brief Commands to instruct cellular thread, used internally
      */
     enum class CommandCode {
         None,                   /**< Do nothing */
@@ -67,36 +67,66 @@ public:
 
     /**
      * @brief Type of radio used in modem to tower communications
-     *
      */
     enum class RadioAccessTechnology {
-        NONE = -1,
-        LTE = 7,
-        LTE_CAT_M1 = 8,
-        LTE_NB_IOT = 9
+        NONE = -1, //!< Not set or not known
+        LTE = 7, //!< LTE Cat 1
+        LTE_CAT_M1 = 8, //!< LTE Cat M1
+        LTE_NB_IOT = 9 //!< LET Cat NB1 (NBIoT)
     };
 
     /**
      * @brief Information identifying the serving tower
-     *
+     * 
+     * This class is contained within the TowerInfo class.
      */
     class CellularServing {
     public:
-        RadioAccessTechnology rat {RadioAccessTechnology::NONE};
-        unsigned int mcc {0};       // 0-999
-        unsigned int mnc {0};       // 0-999
-        uint32_t cellId {0};        // 28-bits
-        unsigned int lac {0};       // 16-bits
-        int signalPower {0};
+        RadioAccessTechnology rat {RadioAccessTechnology::NONE}; //!< Radio access technology, also used as a validity flag
+        unsigned int mcc {0};       //!< Mobile Country Code 0-999
+        unsigned int mnc {0};       //!< Mobile Network Code 0-999
+        uint32_t cellId {0};        //!< Cell identifier 28-bits
+        unsigned int lac {0};       //!< Location area code 16-bits
+        int signalPower {0};        //!< Signal power
 
+        
+        /**
+         * @brief Convert this object to a readable string
+         * 
+         * @return String 
+         */
         String toString() const;
 
+        /**
+         * @brief Convert this object to JSON
+         * 
+         * @param writer JSONWriter to write the data to
+         * @param wrapInObject true to wrap the data with writer.beginObject() and writer.endObject(). Default = true.
+         * @return CellularServing& 
+         */
         CellularServing &toJsonWriter(JSONWriter &writer, bool wrapInObject = true);
 
+        /**
+         * @brief Clear the object to default values
+         */
         void clear();
 
+        /**
+         * @brief Parse the results of an AT+QENG serving cell request
+         * 
+         * @param in 
+         * @return int 
+         */
         int parse(const char *in);
 
+        /**
+         * @brief Returns true if the object appears to contain valid data.
+         * 
+         * @return true 
+         * @return false 
+         * 
+         * This just checks the RAT to make sure it's not NONE.
+         */
         bool isValid() const;
     };
 
@@ -106,39 +136,99 @@ public:
      */
     class CellularNeighbor {
     public:
-        RadioAccessTechnology rat {RadioAccessTechnology::NONE};
-        uint32_t earfcn {0};        // 28-bits
-        uint32_t neighborId {0};    // 0-503
-        int signalQuality {0};
-        int signalPower {0};
-        int signalStrength {0};
+        RadioAccessTechnology rat {RadioAccessTechnology::NONE}; //!< Radio access technology, also used as a validity flag
+        uint32_t earfcn {0};        //!< EARFCN 28-bits
+        uint32_t neighborId {0};    //!< neighbor ID 0-503
+        int signalQuality {0};      //!< Signal quality
+        int signalPower {0};        //!< Signal power
+        int signalStrength {0};     //!< Signal strength
 
+        /**
+         * @brief Convert this object to a readable string
+         * 
+         * @return String 
+         */
         String toString() const;
 
+        /**
+         * @brief Convert this object to JSON
+         * 
+         * @param writer JSONWriter to write the data to
+         * @param wrapInObject true to wrap the data with writer.beginObject() and writer.endObject(). Default = true.
+         * @return CellularServing& 
+         */
         CellularNeighbor &toJsonWriter(JSONWriter &writer, bool wrapInObject = true);
 
+        /**
+         * @brief Clear the object to default values
+         */
         void clear();
 
+        /**
+         * @brief Parse the results of an AT+QENG neighbor cells request
+         * 
+         * @param in 
+         * @return int 
+         */
         int parse(const char *in);
 
+        /**
+         * @brief Returns true if the object appears to contain valid data.
+         * 
+         * @return true 
+         * @return false 
+         * 
+         * This just checks the RAT to make sure it's not NONE.
+         */
         bool isValid() const;
     };
 
     /**
-     * @brief Container 
-     * 
+     * @brief Container for serving tower and neighbor tower information
      */
     class TowerInfo {
     public:
-        TowerInfo();
-        virtual ~TowerInfo();
+        TowerInfo(); //!< Default constructor
+        virtual ~TowerInfo(); //!< Destructor
 
+        /**
+         * @brief You can construct an object as a copy of another object. This is a deep copy.
+         * 
+         * @param other 
+         * 
+         * After copying, changes to the other object have no effect on this object. Also the other object
+         * can be deleted, if desired.
+         */
         TowerInfo(const TowerInfo &other);
+
+        /**
+         * @brief Copy another object into this object. This is a deep copy.
+         * 
+         * @param other 
+         * 
+         * The previous contents of this object are cleared first; this does not merge data.
+         */
         TowerInfo &operator=(const TowerInfo &other);
 
+        /**
+         * @brief Clear the object to default values with no neighbors
+         */
         void clear();
 
+        /**
+         * @brief Parse the results of an AT+QENG serving cell request
+         * 
+         * @param in 
+         * @return int 
+         */
         int parseServing(const char *in);
+
+        /**
+         * @brief Parse the results of an AT+QENG neighbor cells request
+         * 
+         * @param in 
+         * @return int 
+         */
         int parseNeighbor(const char *in);
 
         /**
@@ -158,9 +248,26 @@ public:
          */
         TowerInfo &toJsonWriter(JSONWriter &writer, int numToInclude = 0);
 
+        /**
+         * @brief Returns true if the object appears to contain valid data.
+         * 
+         * @return true 
+         * @return false 
+         * 
+         * This just checks the serving cell RAT to make sure it's not NONE.
+         */
         bool isValid() const;
 
+        /**
+         * @brief The serving cell. This member is public.
+         */
         CellularServing serving;
+
+        /**
+         * @brief Vector of neighbor cells. This member is public.
+         * 
+         * You can use vector members on this, like size(), at(), and iter() to work with the results.
+         */
         std::vector<CellularNeighbor> neighbors;
     };
 
@@ -250,6 +357,12 @@ public:
      */
     inline void unlock() {mutex.unlock();}
 
+    /**
+     * @brief Parse a AT+QENG RAT string to convert it to a RadioAccessTechnology value (an int).
+     * 
+     * @param str 
+     * @return RadioAccessTechnology 
+     */
     static RadioAccessTechnology parseRadioAccessTechnology(const char *str);
 
     /**
@@ -267,24 +380,44 @@ public:
     }
 
 private:
+    /**
+     * @brief The constructor is private because the class is a singleton
+     * 
+     * Use QuectelTowerRK::instance() to instantiate the singleton.
+     */
     QuectelTowerRK();
 
-    CellularSignal _signal;
-    unsigned int _signal_update;
+    /**
+     * @brief The destructor is private because the class is a singleton and cannot be deleted
+     */
+    virtual ~QuectelTowerRK();
 
-    TowerInfo receivedTowerInfo;
-    TowerInfo savedTowerInfo;
+    /**
+     * This class is a singleton and cannot be copied
+     */
+    QuectelTowerRK(const QuectelTowerRK&) = delete;
 
-    RecursiveMutex mutex;
-    os_queue_t _commandQueue;
-    Thread * _thread;
+    /**
+     * This class is a singleton and cannot be copied
+     */
+    QuectelTowerRK& operator=(const QuectelTowerRK&) = delete;
 
-    static int serving_cb(int type, const char* buf, int len, QuectelTowerRK* context);
-    static int neighbor_cb(int type, const char* buf, int len, QuectelTowerRK* context);
-    CommandCode waitOnEvent(system_tick_t timeout);
-    void thread_f();
+    CellularSignal cellularSignal; //!< Last result from Cellular.RSSI()
+    unsigned int cellularSignalLastUpdate; //!< Value of System.uptime() at last RSSI update (in seconds)
 
-    std::function<void(TowerInfo towerInfo)> scanCallback = nullptr;
+    TowerInfo receivedTowerInfo; //!< Value currently being received by the worker thread
+    TowerInfo savedTowerInfo; //!< Copy of complete data, to reduce the amount of time the mutex is locked
 
-    static QuectelTowerRK *_instance;
+    RecursiveMutex mutex; //!< Mutex to prevent accessing certain data from multiple threads at the same time
+    os_queue_t commandQueue; //!< Command requests to be processed by the worker thread
+    Thread * thread; //!< The worker thread
+
+    static int serving_cb(int type, const char* buf, int len, QuectelTowerRK* context); //!< Callback for Cellular.command for serving cell request
+    static int neighbor_cb(int type, const char* buf, int len, QuectelTowerRK* context); //!< Callback for Cellular.command for neighbor cell request
+    CommandCode waitOnEvent(system_tick_t timeout); //!< Wait for a command to be added to the queue
+    void threadFunction(); //!< Worker thread function
+
+    std::function<void(TowerInfo towerInfo)> scanCallback = nullptr; //!< Callback when scan is complete
+
+    static QuectelTowerRK *_instance; //!< Singleton instance
 };

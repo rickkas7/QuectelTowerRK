@@ -45,7 +45,7 @@ void loop() {
 
                 memset(&jsonBuf, 0, sizeof(jsonBuf));
                 JSONBufferWriter writer(jsonBuf, sizeof(jsonBuf) - 1);
-                towerInfo.toJsonWriter(writer);
+                towerInfo.toJsonWriter(writer, 4);
 
                 Log.info("json: %s", jsonBuf);
             });

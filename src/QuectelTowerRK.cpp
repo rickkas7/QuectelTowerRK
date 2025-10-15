@@ -24,10 +24,14 @@ static Logger _log("app.tower");
 
 QuectelTowerRK *QuectelTowerRK::_instance = nullptr;
 
-QuectelTowerRK::QuectelTowerRK() : _signal_update(0), _thread(nullptr)
+QuectelTowerRK::QuectelTowerRK() : cellularSignalLastUpdate(0), thread(nullptr)
 {
-    os_queue_create(&_commandQueue, sizeof(CommandCode), 1, nullptr);
-    _thread = new Thread("tracker_cellular", [this]() {QuectelTowerRK::thread_f();}, OS_THREAD_PRIORITY_DEFAULT);
+    os_queue_create(&commandQueue, sizeof(CommandCode), 1, nullptr);
+    thread = new Thread("tracker_cellular", [this]() {QuectelTowerRK::threadFunction();}, OS_THREAD_PRIORITY_DEFAULT);
+}
+
+QuectelTowerRK::~QuectelTowerRK() {
+
 }
 
 int QuectelTowerRK::scanBlocking(TowerInfo &towerInfo, unsigned long timeoutMs) {
@@ -64,7 +68,7 @@ int QuectelTowerRK::scanWithCallback(std::function<void(TowerInfo towerInfo)> sc
 
 int QuectelTowerRK::startScan() {
     auto event = CommandCode::Measure;
-    CHECK_FALSE(os_queue_put(_commandQueue, &event, 0, nullptr), SYSTEM_ERROR_BUSY);
+    CHECK_FALSE(os_queue_put(commandQueue, &event, 0, nullptr), SYSTEM_ERROR_BUSY);
 
     return SYSTEM_ERROR_NONE;
 }
@@ -96,7 +100,7 @@ int QuectelTowerRK::neighbor_cb(int type, const char* buf, int len, QuectelTower
 
 QuectelTowerRK::CommandCode QuectelTowerRK::waitOnEvent(system_tick_t timeout) {
     CommandCode event {CommandCode::None};
-    auto ret = os_queue_take(_commandQueue, &event, timeout, nullptr);
+    auto ret = os_queue_take(commandQueue, &event, timeout, nullptr);
     if (ret) {
         event = CommandCode::None;
     }
@@ -105,7 +109,7 @@ QuectelTowerRK::CommandCode QuectelTowerRK::waitOnEvent(system_tick_t timeout) {
 }
 
 // a thread to capture cellular signal strength in a non-blocking fashion
-void QuectelTowerRK::thread_f()
+void QuectelTowerRK::threadFunction()
 {
     auto loop = true;
     while (loop) {
@@ -119,11 +123,11 @@ void QuectelTowerRK::thread_f()
             if (rssi.getStrengthValue() < 0) {
                 auto uptime = System.uptime();
                 WITH_LOCK(mutex) {
-                    _signal = rssi;
-                    _signal_update = uptime;
+                    cellularSignal = rssi;
+                    cellularSignalLastUpdate = uptime;
                 }
             } else {
-                _signal_update = 0;
+                cellularSignalLastUpdate = 0;
             }
         }
 
@@ -171,25 +175,25 @@ void QuectelTowerRK::thread_f()
     }
 
     // Kill the thread if we get here
-    _thread->cancel();
+    thread->cancel();
 }
 
 int QuectelTowerRK::getSignal(CellularSignal &signal, unsigned int max_age)
 {
     const std::lock_guard<RecursiveMutex> lg(mutex);
 
-    if(!_signal_update || System.uptime() - _signal_update > max_age)
+    if(!cellularSignalLastUpdate || System.uptime() - cellularSignalLastUpdate > max_age)
     {
         return -ENODATA;
     }
 
-    signal = _signal;
+    signal = cellularSignal;
     return 0;
 }
 
 unsigned int QuectelTowerRK::getSignalUpdate()
 {
-    return _signal_update;
+    return cellularSignalLastUpdate;
 }
 
 void QuectelTowerRK::getTowerInfo(TowerInfo &towerInfo) {
