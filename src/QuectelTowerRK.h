@@ -278,8 +278,8 @@ public:
      * @param timeoutMs How long to wait in milliseconds for a response (0 = wait forever). Default is 10 seconds.
      * @return int 
      * 
-     * This call normally takes around 1 second if already connected to cellular. It can block
-     * for longer if not connected to cellular as it will wait until connected.
+     * This call can take as little as 20 milliseconds, but may take up to a few seconds if connected to cellular.
+     * It can block for longer if not connected to cellular as it will wait until connected.
      */
     int scanBlocking(TowerInfo &towerInfo, unsigned long timeoutMs = 10000);
 
@@ -297,7 +297,8 @@ public:
      * 
      * void callback(TowerInfo towerInfo)
      * 
-     * This call normally takes around 1 second if already connected to cellular.
+     * This call can take as little as 20 milliseconds, but may take up to a few seconds if connected to cellular.
+     * It can take for longer if not connected to cellular as it will wait until connected.
      */
     int scanWithCallback(std::function<void(TowerInfo towerInfo)> scanCallback);
 

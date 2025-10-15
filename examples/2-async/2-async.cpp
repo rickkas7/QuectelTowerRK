@@ -45,6 +45,8 @@ void loop() {
 
                 memset(&jsonBuf, 0, sizeof(jsonBuf));
                 JSONBufferWriter writer(jsonBuf, sizeof(jsonBuf) - 1);
+
+                // Second parameter (4) is the maximum number of towers to include in the array
                 towerInfo.toJsonWriter(writer, 4);
 
                 Log.info("json: %s", jsonBuf);

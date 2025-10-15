@@ -3,9 +3,9 @@
 *Cellular tower information for Particle devices with Quectel cellular modems*
 
  This includes:
- - Tracker (Tracker One, Monitor One, Tracker SoM)
  - M-SoM (M-SoM, Muon)
  - b5som variants of B-SoM (B504e, B524, B523)
+ - Tracker (Tracker One, Monitor One, Tracker SoM)
 
 This library extracts the tracker_cellular.cpp and tracker_cellular.h files out of the [tracker_edge](https://github.com/particle-iot/tracker-edge) project and renames the class to be more generic.
 
