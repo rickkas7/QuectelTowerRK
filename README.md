@@ -25,5 +25,4 @@ Other notes:
 - This cannot be used with the bsom (B4xx) and Boron, which have u-blox cellular modems. This class only works with Quectel cellular modems including the BG95, BG96, and EG91.
 - It's fast, often under 20 milliseconds, and almost always under a few seconds, because it's just returning the data that's already stored in the cellular modem.
 - It can only be used after connecting to cellular, so it won't help with scanning for towers when you can't connect.
-
-
+- If you do not need neighboring cells, you should use [CellularGlobalIdentity](https://docs.particle.io/reference/device-os/api/cellular/cellular-global-identity/) built into Device OS, which does not require a separate library.

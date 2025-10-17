@@ -43,8 +43,9 @@ void loop() {
                     Log.info("neighbor %d: %s", (int)(ii + 1), towerInfo.neighbors.at(ii).toString().c_str());
                 }
 
+                // This is how you save to a Variant, which is used for extended publish in Device OS 6.2.0 and later.
                 Variant obj;
-                towerInfo.toVariant(obj, 4);
+                towerInfo.toVariant(obj);
                 
                 Log.info("json: %s", obj.toJSON().c_str());
             });
