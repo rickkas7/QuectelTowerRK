@@ -107,6 +107,12 @@ public:
         CellularServing &toJsonWriter(JSONWriter &writer, bool wrapInObject = true);
 
 #ifdef SYSTEM_VERSION_v620
+        /**
+         * @brief Save this data in a Variant object. Requires Device OS 6.2.0 or later.
+         * 
+         * @param obj Variant object to add to
+         * @return CellularServing& 
+         */
         CellularServing &toVariant(Variant &obj);
 #endif // SYSTEM_VERSION_v620
 
@@ -164,6 +170,12 @@ public:
         CellularNeighbor &toJsonWriter(JSONWriter &writer, bool wrapInObject = true);
 
 #ifdef SYSTEM_VERSION_v620
+        /**
+         * @brief Save this data in a Variant object. Requires Device OS 6.2.0 or later.
+         * 
+         * @param obj Variant object to add to
+         * @return CellularNeighbor& 
+         */
         CellularNeighbor &toVariant(Variant &obj);
 #endif // SYSTEM_VERSION_v620
 

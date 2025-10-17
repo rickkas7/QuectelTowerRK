@@ -437,7 +437,7 @@ static constexpr unsigned int&#160;</td><td class="memItemRight" valign="bottom"
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>int</dd></dl>
-<p>This call normally takes around 1 second if already connected to cellular. It can block for longer if not connected to cellular as it will wait until connected. </p>
+<p>This call can take as little as 20 milliseconds, but may take up to a few seconds if connected to cellular. It can block for longer if not connected to cellular as it will wait until connected. </p>
 
 </div>
 </div>
@@ -473,7 +473,7 @@ static constexpr unsigned int&#160;</td><td class="memItemRight" valign="bottom"
 <p>The callback function is only called if the return value is SYSTEM_ERROR_NONE. It is called from a separate worker thread.</p>
 <p>Callback function prototype for a C++ function or lambda:</p>
 <p>void callback(TowerInfo towerInfo)</p>
-<p>This call normally takes around 1 second if already connected to cellular. </p>
+<p>This call can take as little as 20 milliseconds, but may take up to a few seconds if connected to cellular. It can take for longer if not connected to cellular as it will wait until connected. </p>
 
 </div>
 </div>
