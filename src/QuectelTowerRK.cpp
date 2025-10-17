@@ -271,6 +271,21 @@ QuectelTowerRK::CellularServing &QuectelTowerRK::CellularServing::toJsonWriter(J
     return *this;
 }
 
+#ifdef SYSTEM_VERSION_v620
+QuectelTowerRK::CellularServing &QuectelTowerRK::CellularServing::toVariant(Variant &obj) {
+
+    obj.set("rat", Variant("lte"));
+    obj.set("mcc", Variant((unsigned)mcc));
+    obj.set("mnc", Variant((unsigned)mnc));
+    obj.set("lac", Variant((unsigned)lac));
+    obj.set("cid", Variant((unsigned)cellId));
+    obj.set("str", Variant(signalPower));
+
+    return *this;
+}
+#endif // SYSTEM_VERSION_v620
+
+
 void QuectelTowerRK::CellularServing::clear() {
     rat = RadioAccessTechnology::NONE;
     mcc = 0;
@@ -326,6 +341,19 @@ QuectelTowerRK::CellularNeighbor &QuectelTowerRK::CellularNeighbor::toJsonWriter
 
     return *this;
 }
+
+
+#ifdef SYSTEM_VERSION_v620
+QuectelTowerRK::CellularNeighbor &QuectelTowerRK::CellularNeighbor::toVariant(Variant &obj) {
+
+    obj.set("nid", Variant((unsigned)neighborId));
+    obj.set("ch", Variant((unsigned)earfcn));
+    obj.set("str", Variant(signalPower));
+
+    return *this;
+}
+#endif // SYSTEM_VERSION_v620
+
 
 void QuectelTowerRK::CellularNeighbor::clear() {
     rat = RadioAccessTechnology::NONE;
@@ -411,6 +439,30 @@ QuectelTowerRK::TowerInfo &QuectelTowerRK::TowerInfo::toJsonWriter(JSONWriter &w
 
     return *this;
 }
+
+#ifdef SYSTEM_VERSION_v620
+QuectelTowerRK::TowerInfo &QuectelTowerRK::TowerInfo::toVariant(Variant &obj, int numToInclude) {
+    int numAdded = 0;
+
+    if (serving.rat != RadioAccessTechnology::NONE) {
+        Variant obj2;
+        serving.toVariant(obj2);
+        obj.append(obj2);
+        numAdded++;
+    }
+    for(auto it = neighbors.begin(); it != neighbors.end(); ++it) {
+        if (numToInclude != 0 && numAdded >= numToInclude) {
+            break;
+        }
+        Variant obj2;
+        (*it).toVariant(obj2);
+        obj.append(obj2);
+        numAdded++;
+    }
+
+    return *this;
+}
+#endif // SYSTEM_VERSION_v620
 
 
 bool QuectelTowerRK::TowerInfo::isValid() const {

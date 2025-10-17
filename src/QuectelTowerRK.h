@@ -106,6 +106,10 @@ public:
          */
         CellularServing &toJsonWriter(JSONWriter &writer, bool wrapInObject = true);
 
+#ifdef SYSTEM_VERSION_v620
+        CellularServing &toVariant(Variant &obj);
+#endif // SYSTEM_VERSION_v620
+
         /**
          * @brief Clear the object to default values
          */
@@ -158,6 +162,10 @@ public:
          * @return CellularServing& 
          */
         CellularNeighbor &toJsonWriter(JSONWriter &writer, bool wrapInObject = true);
+
+#ifdef SYSTEM_VERSION_v620
+        CellularNeighbor &toVariant(Variant &obj);
+#endif // SYSTEM_VERSION_v620
 
         /**
          * @brief Clear the object to default values
@@ -247,6 +255,17 @@ public:
          * @return TowerInfo& 
          */
         TowerInfo &toJsonWriter(JSONWriter &writer, int numToInclude = 0);
+
+#ifdef SYSTEM_VERSION_v620
+        /**
+         * @brief Add the serving and neighbor towers to the Variant in an array. Requires Device OS 6.2.0 or later.
+         * 
+         * @param obj Variant array to add to
+         * @param numToInclude Number of towers to add, or 0 for all
+         * @return TowerInfo& 
+         */
+        TowerInfo &toVariant(Variant &obj, int numToInclude = 0);
+#endif // SYSTEM_VERSION_v620
 
         /**
          * @brief Returns true if the object appears to contain valid data.
