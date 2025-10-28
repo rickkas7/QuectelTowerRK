@@ -26,3 +26,13 @@ Other notes:
 - It's fast, often under 20 milliseconds, and almost always under a few seconds, because it's just returning the data that's already stored in the cellular modem.
 - It can only be used after connecting to cellular, so it won't help with scanning for towers when you can't connect.
 - If you do not need neighboring cells, you should use [CellularGlobalIdentity](https://docs.particle.io/reference/device-os/api/cellular/cellular-global-identity/) built into Device OS, which does not require a separate library.
+
+- Repository: [https://github.com/rickkas7/QuectelTowerRK](https://github.com/rickkas7/QuectelTowerRK)
+- Full [browseable API documentation](https://rickkas7.github.io/QuectelTowerRK/)
+- License: Apache 2.0
+
+## Version history
+
+### 0.0.1 (2025-10-28)
+
+- Initial version
