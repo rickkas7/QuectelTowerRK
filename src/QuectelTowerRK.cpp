@@ -202,6 +202,20 @@ void QuectelTowerRK::getTowerInfo(TowerInfo &towerInfo) {
     }
 }
 
+#ifdef SYSTEM_VERSION_v620
+// [static] 
+void QuectelTowerRK::addToEventHandler(Variant &eventData, Variant &locVariant) {
+    TowerInfo towerInfo;
+
+    int result = instance().scanBlocking(towerInfo, 10000);
+    if (result == SYSTEM_ERROR_NONE) {
+        Variant towerArray;
+        towerInfo.toVariant(towerArray);
+        eventData.set("towers", towerArray);
+    }
+}
+#endif // SYSTEM_VERSION_v620
+
 
 // [static] 
 QuectelTowerRK::RadioAccessTechnology QuectelTowerRK::parseRadioAccessTechnology(const char *str) {

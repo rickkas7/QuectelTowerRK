@@ -389,6 +389,17 @@ public:
      */
     inline void unlock() {mutex.unlock();}
 
+#ifdef SYSTEM_VERSION_v620
+    /**
+     * @brief Handler function used with the LocationFusionRK library
+     * 
+     * @param eventData 
+     * @param locVariant 
+     */
+    static void addToEventHandler(Variant &eventData, Variant &locVariant);
+#endif // SYSTEM_VERSION_v620
+
+
     /**
      * @brief Parse a AT+QENG RAT string to convert it to a RadioAccessTechnology value (an int).
      * 

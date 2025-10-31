@@ -31,7 +31,28 @@ Other notes:
 - Full [browseable API documentation](https://rickkas7.github.io/QuectelTowerRK/)
 - License: Apache 2.0
 
+## Using with LocationFusionRK
+
+Example 4 works with the [LocationFusionRK](https://github.com/rickkas7/LocationFusionRK) library to combine cellular, Wi-Fi, and GNSS location. 
+
+```cpp
+LocationFusionRK::instance()
+    .withAddTower(true)
+    .withAddWiFi(true)
+    .withPublishPeriodic(5min)
+    .withLocEnhancedHandler(locEnhancedCallback)
+    .withAddToEventHandler(QuectelTowerRK::addToEventHandler)
+    .setup();
+```
+
+Use the `withAddToEventHandler()` method of LocationFusionRK to add the handler `QuectelTowerRK::addToEventHandler`. This uses this library to obtain multiple towers instead of using the default single tower geolocation.
+
+
 ## Version history
+
+### 0.0.2 (2025-10-31)
+
+- Add support for LocationFusionRK
 
 ### 0.0.1 (2025-10-28)
 
